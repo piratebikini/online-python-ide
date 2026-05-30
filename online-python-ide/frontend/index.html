@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Online Python IDE</title>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        #editor {
+            width: 60%;
+            height: 100%;
+        }
+
+        #panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+            color: white;
+        }
+
+        #controls {
+            padding: 10px;
+            background: #2b2b2b;
+        }
+
+        button {
+            padding: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #input {
+            height: 120px;
+            width: 100%;
+            resize: none;
+            border: none;
+            outline: none;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #output {
+            flex: 1;
+            padding: 10px;
+            background: black;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+
+    <!-- Monaco Loader -->
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+</head>
+
+<body>
+
+<div id="container">
+    <div id="editor"></div>
+
+    <div id="panel">
+        <div id="controls">
+            <button onclick="runCode()">RUN ▶</button>
+        </div>
+
+        <textarea id="input" placeholder="Input (if needed)"></textarea>
+
+        <div id="output">Output will appear here...</div>
+    </div>
+</div>
+
+<script>
+let editor;
+
+// Safe Monaco load
+require.config({
+    paths: {
+        vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs"
+    }
+});
+
+window.addEventListener("load", function () {
+    require(["vs/editor/editor.main"], function () {
+
+        editor = monaco.editor.create(document.getElementById("editor"), {
+            value: "print('Hello World')",
+            language: "python",
+            theme: "vs-dark",
+            automaticLayout: true
+        });
+
+    });
+});
+
+// Run code function
+async function runCode() {
+    const code = editor.getValue();
+    const input = document.getElementById("input").value;
+
+    try {
+        const res = await fetch("http://127.0.0.1:8000/run", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                code: code,
+                input_data: input
+            })
+        });
+
+        const data = await res.json();
+
+        document.getElementById("output").innerText =
+            (data.output || "") + (data.error || "");
+
+    } catch (err) {
+        document.getElementById("output").innerText =
+            "Error connecting to backend:\n" + err;
+    }
+}
+</script>
+
+</body>
+</html>
